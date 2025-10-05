@@ -463,7 +463,7 @@ function App() {
                 min="1"
                 max="10"
                 value={batches}
-                onChange={(e) => setBatches(Math.max(1, Math.min(10, parseInt(e.target.value || '1', 10))))}
+                onChange={(e) => setBatches(Math.max(1, Math.min(20, parseInt(e.target.value || '1', 20))))}
                 className="batch-input"
                 disabled={isTraining || isRunning}
               />
