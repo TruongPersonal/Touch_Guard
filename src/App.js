@@ -347,7 +347,7 @@ function App() {
         {/* Top */}
         <header className="topbar">
           <div className="brand">
-            <span className="brand-text">TouchGuard <b>Vision</b></span>
+            <span className="brand-text">Touch Guard <b>Vision</b></span>
           </div>
 
           <div className="top-actions">
