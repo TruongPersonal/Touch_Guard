@@ -505,7 +505,7 @@ function App() {
           </div>
 
           <div className="right">
-            <span>©2025 @TruongPersonal</span>
+            <span>©2025, TruongPersonal</span>
           </div>
         </footer>
       </div>
