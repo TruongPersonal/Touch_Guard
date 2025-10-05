@@ -416,7 +416,18 @@ function App() {
               </div>
               <div className="progress"><div className="progress-bar" style={{ width: `${progress.touch}%` }} /></div>
             </div>
-
+              <div className="batch">
+                <span className="batch-label">Batches</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="10"
+                  value={batches}
+                  onChange={(e) => setBatches(Math.max(1, Math.min(10, parseInt(e.target.value || '1', 10))))}
+                  className="batch-input"
+                />
+                <span className="x">×{TRAINING_TIMES}</span>
+              </div>
             <div className="drawer-title mt">Cài đặt</div>
             <div className="settings">
               <label className="switch">
@@ -438,19 +449,6 @@ function App() {
                     </option>
                   ))}
                 </select>
-              </div>
-
-              <label>Batches</label>
-              <div className="batch">
-                <input
-                  type="number"
-                  min="1"
-                  max="10"
-                  value={batches}
-                  onChange={(e) => setBatches(Math.max(1, Math.min(10, parseInt(e.target.value || '1', 10))))}
-                  className="batch-input"
-                />
-                <span className="x">×{TRAINING_TIMES}</span>
               </div>
             </div>
           </aside>
