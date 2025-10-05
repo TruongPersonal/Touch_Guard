@@ -149,6 +149,7 @@ body {
   border: 1px solid var(--line);
 }
 .video {
+  transform: scaleX(-1);
   display: block;
   width: 100%;
   background: #000;
