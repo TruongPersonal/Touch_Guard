@@ -287,7 +287,6 @@ function App() {
 
   const tryLoadDataset = async () => {
     if (AUTO_RESET_ON_EXIT) {
-      // đảm bảo lần mở lại là trắng tinh, kể cả khi events trước đó không chạy
       await idbDel(LS_KEY).catch(() => { });
       setExampleCount({ not: 0, touch: 0 });
       setStep(1);
@@ -338,42 +337,8 @@ function App() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
   const isRunning = step === 4;
-
-  // useEffect(() => {
-  //   if (!AUTO_RESET_ON_EXIT) return;
-
-  //   const clearAll = () => {
-  //     if (clearedRef.current) return;
-  //     clearedRef.current = true;
-  //     try { classifier.current?.clearAllClasses?.(); } catch { }
-  //     idbDel(LS_KEY).catch(() => { });
-  //     localStorage.removeItem(MUTE_KEY);
-  //   };
-
-  //   const onVisibility = () => {
-  //     if (document.visibilityState === 'hidden') clearAll();
-  //   };
-
-  //   // @ts-ignore - 'freeze' chưa có type trong TS DOM
-  //   const onFreeze = () => { clearAll(); };
-
-  //   const onPageHide = () => { clearAll(); };
-
-  //   window.addEventListener('pagehide', onPageHide);
-  //   window.addEventListener('beforeunload', onPageHide);
-  //   document.addEventListener('visibilitychange', onVisibility);
-  //   // @ts-ignore
-  //   document.addEventListener('freeze', onFreeze);
-
-  //   return () => {
-  //     window.removeEventListener('pagehide', onPageHide);
-  //     window.removeEventListener('beforeunload', onPageHide);
-  //     document.removeEventListener('visibilitychange', onVisibility);
-  //     // @ts-ignore
-  //     document.removeEventListener('freeze', onFreeze);
-  //   };
-  // }, []);
 
   // ==== UI ====
   return (
