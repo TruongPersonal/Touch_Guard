@@ -31,6 +31,7 @@ function App() {
   const runningRef = useRef(false);
   const frameCountRef = useRef(0);
   const lastFpsTimeRef = useRef(performance.now());
+  const clearedRef = useRef(false);
 
   const [touched, setTouched] = useState(false);
   const [step, setStep] = useState(1);
@@ -272,6 +273,14 @@ function App() {
   };
 
   const tryLoadDataset = async () => {
+    if (AUTO_RESET_ON_EXIT) {
+      // đảm bảo lần mở lại là trắng tinh, kể cả khi events trước đó không chạy
+      await idbDel(LS_KEY).catch(() => { });
+      setExampleCount({ not: 0, touch: 0 });
+      setStep(1);
+      return;
+    }
+
     const saved = await idbGet(LS_KEY);
     if (!saved) return;
 
@@ -320,18 +329,35 @@ function App() {
   useEffect(() => {
     if (!AUTO_RESET_ON_EXIT) return;
 
-    const handlePageHide = () => {
+    const clearAll = () => {
+      if (clearedRef.current) return;
+      clearedRef.current = true;
       try { classifier.current?.clearAllClasses?.(); } catch { }
       idbDel(LS_KEY).catch(() => { });
-      // Nếu muốn reset cả mute: localStorage.removeItem(MUTE_KEY);
+      localStorage.removeItem(MUTE_KEY);
     };
 
-    window.addEventListener('pagehide', handlePageHide);
-    window.addEventListener('beforeunload', handlePageHide);
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') clearAll();
+    };
+
+    // @ts-ignore - 'freeze' chưa có type trong TS DOM
+    const onFreeze = () => { clearAll(); };
+
+    const onPageHide = () => { clearAll(); };
+
+    window.addEventListener('pagehide', onPageHide);
+    window.addEventListener('beforeunload', onPageHide);
+    document.addEventListener('visibilitychange', onVisibility);
+    // @ts-ignore
+    document.addEventListener('freeze', onFreeze);
 
     return () => {
-      window.removeEventListener('pagehide', handlePageHide);
-      window.removeEventListener('beforeunload', handlePageHide);
+      window.removeEventListener('pagehide', onPageHide);
+      window.removeEventListener('beforeunload', onPageHide);
+      document.removeEventListener('visibilitychange', onVisibility);
+      // @ts-ignore
+      document.removeEventListener('freeze', onFreeze);
     };
   }, []);
 
