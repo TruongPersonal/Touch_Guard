@@ -31,7 +31,8 @@ function App() {
   const runningRef = useRef(false);
   const frameCountRef = useRef(0);
   const lastFpsTimeRef = useRef(performance.now());
-  const clearedRef = useRef(false);
+  const trainingLockRef = useRef(false);
+
 
   const [touched, setTouched] = useState(false);
   const [step, setStep] = useState(1);
@@ -39,6 +40,7 @@ function App() {
   const [exampleCount, setExampleCount] = useState({ not: 0, touch: 0 });
   const [confidence, setConfidence] = useState(0.8);
   const [batches, setBatches] = useState(1);
+  const [isTraining, setIsTraining] = useState(false);
 
   const [muted, setMuted] = useState(() => {
     try { return localStorage.getItem(MUTE_KEY) === 'true'; } catch { return false; }
@@ -127,29 +129,40 @@ function App() {
 
   // ==== Train ====
   const train = async (label) => {
-    const isNotTouch = label === NOT_TOUCH_LABEL;
-    const key = isNotTouch ? 'not' : 'touch';
+    // chặn khi đang chạy hoặc đang train
+    if (runningRef.current || isTraining || trainingLockRef.current) return;
 
-    if (isNotTouch && step !== 1) setStep(1);
-    if (!isNotTouch && step < 2) setStep(2);
+    trainingLockRef.current = true;
+    setIsTraining(true);
+    try {
+      const isNotTouch = label === NOT_TOUCH_LABEL;
+      const key = isNotTouch ? 'not' : 'touch';
 
-    const total = TRAINING_TIMES * batches;
-    for (let i = 0; i < total; i++) {
-      const percent = Math.round(((i + 1) / total) * 100);
-      setProgress(s => ({ ...s, [key]: percent }));
-      await training(label);
+      if (isNotTouch && step !== 1) setStep(1);
+      if (!isNotTouch && step < 2) setStep(2);
+
+      const total = TRAINING_TIMES * batches;
+      for (let i = 0; i < total; i++) {
+        const percent = Math.round(((i + 1) / total) * 100);
+        setProgress(s => ({ ...s, [key]: percent }));
+        await training(label);
+      }
+
+      const counts = classifier.current.getClassExampleCount();
+      const newCounts = {
+        not: counts[NOT_TOUCH_LABEL] || exampleCount.not,
+        touch: counts[TOUCHED_LABEL] || exampleCount.touch,
+      };
+      setExampleCount(newCounts);
+      await trySaveDataset(newCounts);
+
+      if (isNotTouch) setStep(2); else setStep(3);
+    } finally {
+      setIsTraining(false);
+      trainingLockRef.current = false;
     }
-
-    const counts = classifier.current.getClassExampleCount();
-    const newCounts = {
-      not: counts[NOT_TOUCH_LABEL] || exampleCount.not,
-      touch: counts[TOUCHED_LABEL] || exampleCount.touch,
-    };
-    setExampleCount(newCounts);
-    await trySaveDataset(newCounts);
-
-    if (isNotTouch) setStep(2); else setStep(3);
   };
+
 
   const training = (label) =>
     new Promise(async (resolve) => {
@@ -325,41 +338,42 @@ function App() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  const isRunning = step === 4;
 
-  useEffect(() => {
-    if (!AUTO_RESET_ON_EXIT) return;
+  // useEffect(() => {
+  //   if (!AUTO_RESET_ON_EXIT) return;
 
-    const clearAll = () => {
-      if (clearedRef.current) return;
-      clearedRef.current = true;
-      try { classifier.current?.clearAllClasses?.(); } catch { }
-      idbDel(LS_KEY).catch(() => { });
-      localStorage.removeItem(MUTE_KEY);
-    };
+  //   const clearAll = () => {
+  //     if (clearedRef.current) return;
+  //     clearedRef.current = true;
+  //     try { classifier.current?.clearAllClasses?.(); } catch { }
+  //     idbDel(LS_KEY).catch(() => { });
+  //     localStorage.removeItem(MUTE_KEY);
+  //   };
 
-    const onVisibility = () => {
-      if (document.visibilityState === 'hidden') clearAll();
-    };
+  //   const onVisibility = () => {
+  //     if (document.visibilityState === 'hidden') clearAll();
+  //   };
 
-    // @ts-ignore - 'freeze' chưa có type trong TS DOM
-    const onFreeze = () => { clearAll(); };
+  //   // @ts-ignore - 'freeze' chưa có type trong TS DOM
+  //   const onFreeze = () => { clearAll(); };
 
-    const onPageHide = () => { clearAll(); };
+  //   const onPageHide = () => { clearAll(); };
 
-    window.addEventListener('pagehide', onPageHide);
-    window.addEventListener('beforeunload', onPageHide);
-    document.addEventListener('visibilitychange', onVisibility);
-    // @ts-ignore
-    document.addEventListener('freeze', onFreeze);
+  //   window.addEventListener('pagehide', onPageHide);
+  //   window.addEventListener('beforeunload', onPageHide);
+  //   document.addEventListener('visibilitychange', onVisibility);
+  //   // @ts-ignore
+  //   document.addEventListener('freeze', onFreeze);
 
-    return () => {
-      window.removeEventListener('pagehide', onPageHide);
-      window.removeEventListener('beforeunload', onPageHide);
-      document.removeEventListener('visibilitychange', onVisibility);
-      // @ts-ignore
-      document.removeEventListener('freeze', onFreeze);
-    };
-  }, []);
+  //   return () => {
+  //     window.removeEventListener('pagehide', onPageHide);
+  //     window.removeEventListener('beforeunload', onPageHide);
+  //     document.removeEventListener('visibilitychange', onVisibility);
+  //     // @ts-ignore
+  //     document.removeEventListener('freeze', onFreeze);
+  //   };
+  // }, []);
 
   // ==== UI ====
   return (
@@ -397,12 +411,12 @@ function App() {
                 {runningRef.current ? (
                   <>
                     <button className="btn btn-secondary" onClick={pause}>Stop</button>
-                    <button className="btn btn-ghost" onClick={resetTraining}>Reset</button>
+                    <button className="btn btn-ghost" onClick={resetTraining} disabled={isTraining}>Reset</button>
                   </>
                 ) : (
                   <>
-                    <button className="btn btn-primary" onClick={run} disabled={loading || !allowRun}>Run</button>
-                    <button className="btn btn-ghost" onClick={resetTraining}>Reset</button>
+                    <button className="btn btn-primary" onClick={run} disabled={loading || !allowRun || isTraining}>Run</button>
+                    <button className="btn btn-ghost" onClick={resetTraining} disabled={isTraining}>Reset</button>
                   </>
                 )}
               </div>
@@ -429,7 +443,9 @@ function App() {
                     value={confidence}
                     onChange={(e) => setConfidence(parseFloat(e.target.value))}
                     className="slider"
+                    disabled={isTraining}
                   />
+
                   <span className="stat-badge">{confidence.toFixed(2)}</span>
                 </div>
               </div>
@@ -437,7 +453,7 @@ function App() {
           </section>
 
           {/* Training Steps */}
-          <aside className={`panel side-panel`}>
+          <aside className={`panel side-panel ${isTraining ? 'busy' : ''}`}>
             <div className="drawer-title">Huấn luyện</div>
 
             <div className={`step-card ${step >= 1 ? 'active' : ''} ${step > 1 ? 'done' : ''}`}>
@@ -446,7 +462,14 @@ function App() {
                 <span className="step-name">KHÔNG CHẠM</span>
               </div>
               <div className="train-row">
-                <button className="btn" onClick={() => train(NOT_TOUCH_LABEL)} disabled={loading || step > 1}>Train 1</button>
+                <button
+                  className="btn"
+                  onClick={() => train(NOT_TOUCH_LABEL)}
+                  disabled={loading || step > 1 || isRunning || isTraining}
+                >
+                  {isTraining && step === 1 ? "Training..." : "Train 1"}
+                </button>
+
               </div>
               <div className="progress"><div className="progress-bar" style={{ width: `${progress.not}%` }} /></div>
             </div>
@@ -457,7 +480,14 @@ function App() {
                 <span className="step-name">CÓ CHẠM</span>
               </div>
               <div className="train-row">
-                <button className="btn" onClick={() => train(TOUCHED_LABEL)} disabled={loading || step < 2 || step > 2}>Train 2</button>
+                <button
+                  className="btn"
+                  onClick={() => train(TOUCHED_LABEL)}
+                  disabled={loading || step < 2 || step > 2 || isRunning || isTraining}
+                >
+                  {isTraining && step === 2 ? "Training..." : "Train 2"}
+                </button>
+
               </div>
               <div className="progress"><div className="progress-bar" style={{ width: `${progress.touch}%` }} /></div>
             </div>
@@ -470,7 +500,9 @@ function App() {
                 value={batches}
                 onChange={(e) => setBatches(Math.max(1, Math.min(10, parseInt(e.target.value || '1', 10))))}
                 className="batch-input"
+                disabled={isTraining || isRunning}
               />
+
               <span className="x">×{TRAINING_TIMES}</span>
             </div>
             <div className="drawer-title mt">Cài đặt</div>
@@ -486,8 +518,9 @@ function App() {
                   className="select"
                   value={deviceId}
                   onChange={(e) => switchCamera(e.target.value)}
-                  disabled={devices.length <= 1 || loading}
+                  disabled={devices.length <= 1 || loading || isTraining || isRunning}
                 >
+
                   {devices.map(d => (
                     <option key={d.deviceId} value={d.deviceId}>
                       {d.label || `Camera ${d.deviceId.slice(0, 4)}`}
