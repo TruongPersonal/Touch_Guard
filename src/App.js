@@ -18,6 +18,7 @@ const LOOP_DELAY_MS = 160;
 const LS_KEY = 'touch-guard-dataset-v1';
 const MUTE_KEY = 'tg-muted';
 const COMPRESS_TO_CENTROID = true;
+const AUTO_RESET_ON_EXIT = true;
 
 function App() {
   // ==== Refs / States ====
@@ -316,6 +317,24 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    if (!AUTO_RESET_ON_EXIT) return;
+
+    const handlePageHide = () => {
+      try { classifier.current?.clearAllClasses?.(); } catch { }
+      idbDel(LS_KEY).catch(() => { });
+      // Nếu muốn reset cả mute: localStorage.removeItem(MUTE_KEY);
+    };
+
+    window.addEventListener('pagehide', handlePageHide);
+    window.addEventListener('beforeunload', handlePageHide);
+
+    return () => {
+      window.removeEventListener('pagehide', handlePageHide);
+      window.removeEventListener('beforeunload', handlePageHide);
+    };
+  }, []);
+
   // ==== UI ====
   return (
     <div className={`main ${touched ? 'touched' : ''}`}>
@@ -416,18 +435,18 @@ function App() {
               </div>
               <div className="progress"><div className="progress-bar" style={{ width: `${progress.touch}%` }} /></div>
             </div>
-              <div className="batch">
-                <span className="batch-label">Batches</span>
-                <input
-                  type="number"
-                  min="1"
-                  max="10"
-                  value={batches}
-                  onChange={(e) => setBatches(Math.max(1, Math.min(10, parseInt(e.target.value || '1', 10))))}
-                  className="batch-input"
-                />
-                <span className="x">×{TRAINING_TIMES}</span>
-              </div>
+            <div className="batch">
+              <span className="batch-label">Batches</span>
+              <input
+                type="number"
+                min="1"
+                max="10"
+                value={batches}
+                onChange={(e) => setBatches(Math.max(1, Math.min(10, parseInt(e.target.value || '1', 10))))}
+                className="batch-input"
+              />
+              <span className="x">×{TRAINING_TIMES}</span>
+            </div>
             <div className="drawer-title mt">Cài đặt</div>
             <div className="settings">
               <label className="switch">
@@ -455,9 +474,15 @@ function App() {
         </div>
 
         <footer className="footer">
-          <span className="foot-brand">TouchGuard Vision</span>
-          <span className="foot-dot">•</span>
-          <span>TensorFlow.js · MobileNet + KNN</span>
+          <div className="left">
+            <span className="foot-brand">TouchGuard Vision</span>
+            <span className="foot-dot">•</span>
+            <span>TensorFlow.js · MobileNet + KNN</span>
+          </div>
+
+          <div className="right">
+            <span>©2025 @TruongPersonal</span>
+          </div>
         </footer>
       </div>
     </div>

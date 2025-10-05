@@ -192,3 +192,14 @@ body{
 }
 .foot-brand{font-weight:700;color:#cfe3ff}
 .foot-dot{opacity:.5}
+.footer .left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.footer .right {
+  margin-left: auto;       
+  opacity: 0.75;          
+  font-weight: 500;
+}
