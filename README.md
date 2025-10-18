@@ -1,7 +1,5 @@
 # TouchGuard
 TouchGuard là ứng dụng nhận diện **chạm tay lên mặt** chạy trực tiếp trên trình duyệt bằng **TensorFlow.js**.
-Ứng dụng sử dụng **MobileNet** để trích xuất đặc trưng ảnh và **KNN Classifier** để phân loại hai trạng thái: **Không chạm** và **Có chạm**.
-Toàn bộ xử lý được thực hiện **cục bộ trên thiết bị** của bạn, không gửi dữ liệu ra ngoài.
 
 ---
 
@@ -29,14 +27,6 @@ Toàn bộ xử lý được thực hiện **cục bộ trên thiết bị** c�
 ## 💾 Lưu trữ
 - Dữ liệu mô hình: **IndexedDB** (`touch-guard-dataset-v1`).
 - Trạng thái tắt âm: **localStorage** (`tg-muted`).
-- Có thể mở lại ứng dụng mà không cần huấn luyện lại.
-
----
-
-## 🔧 Sửa lỗi thường gặp
-- **Không thấy camera:** kiểm tra quyền truy cập camera hoặc bật HTTPS/localhost.
-- **Âm thanh không tắt:** bật công tắc “Tắt âm”.
-- **Muốn huấn luyện lại:** nhấn **Reset** để xoá toàn bộ dữ liệu huấn luyện.
 
 ---
 
@@ -50,4 +40,4 @@ Toàn bộ xử lý được thực hiện **cục bộ trên thiết bị** c�
 ---
 
 ## 📜 Giấy phép
-**MIT License** — dùng tự do cho học tập, nghiên cứu, và demo.
+**MIT License** — dùng tự do cho học tập, nghiên cứu và demo.
