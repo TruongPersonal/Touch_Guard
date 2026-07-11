@@ -31,7 +31,6 @@ const LOOP_DELAY_MS = 160;           // Độ trễ mục tiêu mỗi vòng dự
 const LS_KEY = 'touch-guard-dataset-v1'; // Key lưu dataset vào IndexedDB
 const MUTE_KEY = 'tg-muted';             // Key lưu trạng thái tắt âm vào localStorage
 const COMPRESS_TO_CENTROID = true;       // Nén mẫu KNN bằng vector trung bình (centroid) cho mỗi lớp
-const AUTO_RESET_ON_EXIT = true;         // Nếu true: không tải lại dataset cũ (xóa khi khởi động)
 
 // ===== Component chính =====
 function App() {
@@ -212,6 +211,7 @@ function App() {
       // Thêm vào classifier với nhãn tương ứng
       classifier.current.addExample(embedding, label);
       // Giải phóng bộ nhớ tensor
+
       embedding.dispose?.();
       // Nghỉ nhẹ để tránh block UI (tạo cảm giác "đang thu")
       await sleep(50);
@@ -349,16 +349,8 @@ function App() {
     await idbSet(LS_KEY, payload); // Ghi vào IndexedDB
   };
 
-  // ==== Tải dataset KNN từ IndexedDB (nếu không reset auto) ====
+  // ==== Tải dataset KNN từ IndexedDB ====
   const tryLoadDataset = async () => {
-    if (AUTO_RESET_ON_EXIT) {
-      // Nếu cấu hình reset khi vào app: xóa dataset & reset UI
-      await idbDel(LS_KEY).catch(() => { });
-      setExampleCount({ not: 0, touch: 0 });
-      setStep(1);
-      return;
-    }
-
     const saved = await idbGet(LS_KEY);
     if (!saved) return;
 
