@@ -30,7 +30,7 @@ const TRAINING_TIMES = 50;           // Mỗi lần nhấn Train sẽ thêm 50 m
 const LOOP_DELAY_MS = 160;           // Độ trễ mục tiêu mỗi vòng dự đoán (~6.25 FPS nếu mỗi vòng ~160ms)
 const LS_KEY = 'touch-guard-dataset-v1'; // Key lưu dataset vào IndexedDB
 const MUTE_KEY = 'tg-muted';             // Key lưu trạng thái tắt âm vào localStorage
-const COMPRESS_TO_CENTROID = true;       // Nén mẫu KNN bằng vector trung bình (centroid) cho mỗi lớp
+const COMPRESS_TO_CENTROID = false;      // Không nén mẫu KNN để giữ nguyên độ chính xác khi tải lại dataset
 
 // ===== Component chính =====
 function App() {
@@ -192,7 +192,7 @@ function App() {
         touch: counts[TOUCHED_LABEL] || exampleCount.touch,
       };
       setExampleCount(newCounts);
-      // Lưu dataset (có thể dạng centroid nếu bật)
+      // Lưu dataset
       await trySaveDataset(newCounts);
 
       // Chuyển bước UI tiếp theo
@@ -381,6 +381,10 @@ function App() {
     }
 
     setExampleCount({ not: uiNot, touch: uiTouch });
+    setProgress({
+      not: uiNot > 0 ? 100 : 0,
+      touch: uiTouch > 0 ? 100 : 0
+    });
     if (uiNot > 0 && uiTouch > 0) setStep(3); // Nếu đủ 2 lớp, chuyển sang bước sẵn sàng
   };
 
